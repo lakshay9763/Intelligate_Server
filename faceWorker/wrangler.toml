@@ -1,0 +1,7 @@
+name = "faceworker"
+main = "src/index.js"
+compatibility_date = "2026-04-12"
+
+[[vectorize]]
+binding = "VECTOR_INDEX"
+index_name = "intelli-gate-index"

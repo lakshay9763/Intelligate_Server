@@ -6,8 +6,6 @@ const multer = require("multer")
 
 const cloudinary = require('cloudinary').v2
 
-const WORKER_URL = "http://localhost:8787"; 
-
 const { passController, addResidentVehicleController, staffPassController, staffPassHistoryController, addNewPersonalStaffController, fetchAllPersonalStaffController, updatePersonalStaffScheduleController, updateEntryAllowedController, updateStaffAttendanceController, updateStaffPhotoController } = require('../controller/passController');
 const { verifyPassController } = require('../controller/passController');
 
@@ -20,10 +18,6 @@ cloudinary.config({
   api_key: "397341551664711",
   api_secret: "G8Erp1raivFJyMChleae3nOXwpI"
 });
-
-// G8Erp1raivFJyMChleae3nOXwpI
-// 397341551664711
-// dd5pdy82n
 
 
 passRoute.post('/addVisitorPass',passController);
@@ -57,7 +51,7 @@ passRoute.post('/addfaceembedding2server',async (req,res,next)=>{
 
    console.log("Hit sending")
     const response = await axios.post(
-      "https://face-worker.lakshay9763.workers.dev/insert", // your worker URL
+      "https://faceworker.lakshay9763.workers.dev/insert", // your worker URL
       {
         id: workerId,
         vector: vector,
@@ -86,18 +80,19 @@ passRoute.post('/comparefaceembedding',async (req,res,next)=>{
 
 
 
-   
-    const response = await axios.post(
-      "https://face-worker.lakshay9763.workers.dev/search",
-      { vector }
-    );
+    console.log('evil ...!',vector.length)
 
-    console.log('evil ...!')
+    
+    // const response = await axios.post("https://faceworker.lakshay9763.workers.dev/delete",{id:"WRK-MNVP5SQT"}) //{ vector }, { timeout: 10000 });
+    // // res.json(response.data);
+    // console.log(response)
 
+
+    const response = await axios.post("https://faceworker.lakshay9763.workers.dev/search", { vector }, { timeout: 10000 });
     res.json(response.data);
 
   } catch (err) {
-    console.error(err.message);
+    console.error(err);
     res.status(500).json({ error: "Insert failed" });
   }
 })

@@ -56,6 +56,6 @@ guardRoute.get('/getAllStaff',async  (req,res,next)=>{
 
 })
 
-guardRoute.post("/updateLocationStatus", updateLocationStatusController);
+guardRoute.post('/updateLocationStatus', updateLocationStatusController);
 
 exports.guardRoute = guardRoute

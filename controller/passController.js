@@ -1,4 +1,5 @@
 const { Passes, Passes_Info,Vehiles_Add ,StaffPasses,StaffPassesInfo,PersonalStaff} = require("../model/passModel");
+const { Worker2Resident } = require("../model/residentModel");
 const cloudinary = require('cloudinary').v2
 
 cloudinary.config({
@@ -228,10 +229,14 @@ exports.addNewPersonalStaffController = async (req,res,next)=>{
 
 
     const personalStaff = new PersonalStaff({workerId,residentId,name,category,entryAllowed,phone,photo,salary,schedule,shift,since,status,tasks,flat})
-
+    const res2staf= new Worker2Resident({workerId,residentList:{
+        residentId
+    }})
     try {
         const response = await personalStaff.save()
-        console.log(response,'success Elephant')
+        const restt = await res2staf.save()
+
+        console.log(restt,'success Elephant')
         res.status(200).json(response)
     } catch (error) {
         console.log(error)

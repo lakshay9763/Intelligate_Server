@@ -1,6 +1,6 @@
 
 const { Passes, Passes_Info,PersonalStaff } = require('../model/passModel');
-const {Worker2Resident,ResidentNotifications} = require('../model/residentModel')
+const {Worker2Resident,ResidentNotifications,Resident} = require('../model/residentModel')
 
 const admin = require('../firebase');
 const e = require('cors');
@@ -8,10 +8,10 @@ const e = require('cors');
 
 exports.updateLocationStatusController = async (req, res, next) => {
 
-
+  
 
   try {
-    console.log(req.body, "workdone");
+    console.log(req.body, "workdone")
 
 
     const { workerId, guardId, locationStatus,entryDate,entryTime ,name,category} = req.body;
@@ -37,15 +37,22 @@ exports.updateLocationStatusController = async (req, res, next) => {
 
         if (existing) {
            console.log("Already Exists")
+         
 
-          
+        
            const {residentList} = await Worker2Resident.findOne({ workerId })
 
            console.log(residentList,'Pubgg!')
 
            residentList.forEach(async (element) => {
             
-            const {fcmToken,residentId} = element
+            const {residentId} = element                 
+ 
+             const resident = await Resident.findOne({
+               residentId
+             })
+
+             const token = resident.fcmToken
 
              const ret=  await ResidentNotifications.updateOne(
                    { residentId},
@@ -55,7 +62,7 @@ exports.updateLocationStatusController = async (req, res, next) => {
 
 
             const rest = await admin.messaging().send({
-             token: fcmToken,
+             token: token,                                        // 3
              notification: {
                title:`${category} entered`,
                body: `Name ${name}`
@@ -74,10 +81,12 @@ exports.updateLocationStatusController = async (req, res, next) => {
            });
 
       
+          }
 
 
-
-        }else{
+        }
+        
+        else{
 
         const newAttendance = {
         date: entryDate,
@@ -100,7 +109,7 @@ exports.updateLocationStatusController = async (req, res, next) => {
 
 
         
-    }
+    
 
    
     res.status(200).json({

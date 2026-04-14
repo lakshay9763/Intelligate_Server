@@ -5,7 +5,10 @@ const fetch = require("node-fetch")
 
 const { getIO, getGuardSocketId } = require('../socket')
 const customAlphabet = require('nanoid').customAlphabet
-const admin = require('../firebase')
+
+const fs = require('fs'); 
+
+const admin = require('../firebase.js')
 
 cloudinary.config({
   cloud_name: "dd5pdy82n",
@@ -100,10 +103,11 @@ exports.authResidentController = async (req,res,next)=>{
         else{
             
      
-        resident.fcmToken = token
+       const data =  await Resident.updateOne(
+  { residentId },
+  { $set: { fcmToken: token } }
+)   
 
-        const data = await resident.save()
-        console.log(data)
 
         res.status(200).json(data)
 
@@ -124,73 +128,98 @@ exports.authResidentController = async (req,res,next)=>{
 
 
 
+exports.sendPushNot2ResidentController = async (req, res, next) => {
+  const { guardId, requestId, flat, purpose, phone, visitorName } = req.body;
 
-exports.sendPushNot2ResidentController = async (req,res,next)=>{
+  try {
+    // 1. Find the Resident
+    const residentId = `Res-${flat}`;
+    const resident = await Resident.findOne({ residentId });
 
-  console.log(req.body)
+    console.log(resident)
 
-  const {guardId,requestId,flat,purpose,phone,visitorName} = req.body
+    if (!resident) {
+      // Clean up uploaded file if resident doesn't exist
+      if (req.file) fs.unlinkSync(req.file.path);
 
+      return res.status(404).json({ message: "Resident not found for this flat",success:false });
+    }
 
+    // 2. Upload Photo to Cloudinary
+    let photoUrl = 'https://res.cloudinary.com/dd5pdy82n/image/upload/v1774505644/wmnurnvn3iiydjwv1dor.jpg';
+    
+    if (req.file) {
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: 'visitors',
+      });
+      photoUrl = result.secure_url;
+      // Clean up local temp file after successful upload
+      fs.unlinkSync(req.file.path);
+    }
 
+    // 3. Save Request to Database
+    const visitorDetails = {
+      name: visitorName,
+      phoneNumber: phone,
+      photoUrl: photoUrl
+    };
 
- const residentId = 'Res-B402'
+    const newRequest = new ResidentRequest({
+      requestId,
+      guardId,
+      residentId,
+      purpose,
+      visitorDetails,
+      flatNumber: flat
+    });
 
- const result = await cloudinary.uploader.upload(req.file.path)
+    const savedRequest = await newRequest.save();
 
- console.log(result.secure_url,"url to staff")
- 
+    // 4. Send Push Notification
+    if (resident.fcmToken) {
+      try {
+        await admin.messaging().send({
+          token: resident.fcmToken,
+          notification: {
+            title: "Gate Alert 🏠",
+            body: `${visitorName} is at the gate for ${purpose}`
+          },
+          data: {
+            type: "Visitor",
+            requestId: String(requestId),
+            screen: 'Notif',
+            visitorName: String(visitorName),
+            photoUrl: String(photoUrl)
+          }
+        });
+      } catch (fcmError) {
+        console.error("FCM Error:", fcmError.message);
+        // We don't return error here because the DB record is already saved
+      }
+    }
 
- const visitorDetails = {
-  name:visitorName,
-  phoneNumber:phone,
-  photoUrl: result.secure_url || 'https://res.cloudinary.com/dd5pdy82n/image/upload/v1774505644/wmnurnvn3iiydjwv1dor.jpg'
- }
+    // 5. Success Response
+    return res.status(200).json({
+      success: true,
+      message: "Notification sent to resident",
+      data: savedRequest
+    });
 
- const flatNumber = flat
+  } catch (error) {
+    console.error("Controller Error:", error);
+    
+    // Clean up local file if an error occurs during processing
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
 
- try {
-  
- const request = new ResidentRequest({requestId,guardId,residentId,purpose,visitorDetails,flatNumber})
-  
- const respon = await request.save()
-
-
-
- console.log(respon,"New Request saved to db")
-
-  const rest = await admin.messaging().send({
-  token: "eo5ZKWNgQrSV51FzcEG8eK:APA91bFYllXr6dzbUWbZ7Wk6InST8OxlI4NaGviLX9W1tHWtWnK0kd84MdR9U03FoeeRf9lf9LwbKwNTDxxGUfmyT0XzesJ-vbgWax4eVv4vG83THPd2Crg",
-  notification: {
-    title: "Gate Alert",
-    body: "Visitor arrived"
-
-  },
-  data: {
-    type:"Visitor",
-    requestId,
-    screen:'Notif',
-    name:'Danish'
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+      error: error.message
+    });
   }
-})
-
- res.status(200).json(respon)
-
-
-
-
-
- } catch (error) {
-  console.log(error)
- }
-
-
-
-
-
-  
-}
-
+};
 exports.getNotifInfoController =async (req,res,next)=>{
 
   const {requestId} = req.query
@@ -228,6 +257,8 @@ exports.respondRequestController = async (req,res,next)=>{
   
   const io = getIO()
   const socketId = getGuardSocketId(request.guardId)
+
+  
 
    if (socketId) {
     io.to(socketId).emit("respondRequest", {status:action,requestId});
@@ -267,7 +298,7 @@ exports.addServiceStaffController = async (req,res,next)=>{
   
   const resident = await Resident.findOne({residentId:"Res-B402"})
   
-  const residentId = 'RES-B204'
+  const residentId = 'RES-B402'
 
   const ret=  await ResidentNotifications.updateOne(
                    { residentId},
@@ -294,12 +325,13 @@ exports.addServiceStaffController = async (req,res,next)=>{
                }
    })
 
-   
+   console.log(rest)
 
    res.status(200).json(rest)
 }
 
 exports.setAllSerStaffController = async (req,res,next)=>{
+  console.log("Hit----------------------------------------------------")
   const remainStaff = await ServiceStaff.find({locationStatus:'inside'})
   res.status(200).json(remainStaff)
 }
