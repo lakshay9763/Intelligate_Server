@@ -253,7 +253,45 @@ residentRoute.get('/staff/check/:phone', protect, authorize, async (req, res, ne
 residentRoute.get('/all-society-staff', protect, authorize, async (req, res, next) => {
   try {
     const { category } = req.query;
-    const allStaff = await Staff.find({ category }).sort({ activeHousesCount: 1 });
+    const allStaff = await Staff.aggregate([
+      {
+        $match: { category }
+      },
+
+      {
+        $lookup: {
+          from: "staffaffiliations",
+          localField: "_id",
+          foreignField: "staffId",
+          as: "affiliations"
+        }
+      },
+
+      {
+        $addFields: {
+          activeHousesCount: {
+            $size: {
+              $filter: {
+                input: "$affiliations",
+                as: "aff",
+                cond: { $eq: ["$$aff.status", "active"] }
+              }
+            }
+          }
+        }
+      },
+
+      {
+        $project: {
+          affiliations: 0   // hide joined data
+        }
+      },
+
+      {
+        $sort: { activeHousesCount: 1 }
+      }
+    ]);
+
 
     if (!allStaff || allStaff.length === 0) {
       return res.status(404).json({ success: false, message: 'No staff category exists.' });
