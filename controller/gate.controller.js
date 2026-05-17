@@ -141,10 +141,11 @@ exports.CreateVisitorPass = async (req, res, next) => {
 };
 
 exports.GetVisitorPass = async (req, res, next) => {
+  console.log("Visitor Pass")
   try {
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
     const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
-
+  
     await VisitorRequest.updateMany(
       {
         status: 'pending',
@@ -166,6 +167,7 @@ exports.GetVisitorPass = async (req, res, next) => {
     });
 
   } catch (error) {
+    console.log(error,error.message)
     return res.status(500).json({ success: false, message: 'Failed to fetch visitor passes' });
   }
 };
