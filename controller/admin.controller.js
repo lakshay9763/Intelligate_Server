@@ -44,7 +44,7 @@ exports.adminLogin = async (req, res) => {
     res.cookie('admin_session', sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'none',
       maxAge: 12 * 60 * 60 * 1000
     });
 
