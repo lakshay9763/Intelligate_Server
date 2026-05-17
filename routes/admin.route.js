@@ -52,10 +52,7 @@ adminRoute.delete('/remove', protectAdmin, async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Admin not found' });
     }
 
-    if (admin.role !== 'superadmin') {
-      return res.status(401).json({ success: false, message: 'You have no permission to remove admins.' });
-    }
-
+    
     await Promise.all([
       Admin.findByIdAndDelete(adminId),
       AdminSession.findOneAndDelete({ adminId })
