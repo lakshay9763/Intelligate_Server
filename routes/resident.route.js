@@ -235,20 +235,71 @@ residentRoute.delete('/staff', protect, authorize, async (req, res, next) => {
   }
 });
 
-residentRoute.get('/staff/check/:phone', protect, authorize, async (req, res, next) => {
-  try {
-    const { phone } = req.params;
-    const staffMember = await Staff.findOne({ phone });
+residentRoute.get(
+  '/staff/check/:phone',
+  protect,
+  authorize,
+  async (req, res) => {
+    try {
+      const { phone } = req.params;
 
-    if (!staffMember) {
-      return res.status(404).json({ success: false, message: 'No staff member exists with this number.' });
+      const staff = await Staff.aggregate([
+        {
+          $match: { phone }
+        },
+
+        {
+          $lookup: {
+            from: "staffaffiliations",
+            localField: "_id",
+            foreignField: "staffId",
+            as: "affiliations"
+          }
+        },
+
+        {
+          $addFields: {
+            activeHousesCount: {
+              $size: {
+                $filter: {
+                  input: "$affiliations",
+                  as: "aff",
+                  cond: { $eq: ["$$aff.status", "active"] }
+                }
+              }
+            }
+          }
+        },
+
+        {
+          $project: {
+            affiliations: 0
+          }
+        }
+      ]);
+
+      if (!staff.length) {
+        return res.status(404).json({
+          success: false,
+          message: "No staff member exists with this number."
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        data: staff[0],
+        message: "Staff Found!!"
+      });
+
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: "Server Error"
+      });
     }
-
-    res.status(200).json({ success: true, data: staffMember, message: 'Staff Found!!' });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server Error' });
   }
-});
+);
+
 
 residentRoute.get('/all-society-staff', protect, authorize, async (req, res, next) => {
   try {
