@@ -198,7 +198,7 @@ gateRoute.post('/service-staff', protectGate, authorize, async (req, res, next) 
       notifType: type,
       entryTime: formattedTime,
       approvedBy: memberId,
-      personDetails: { name }
+      personDetails: { name,photo }
     });
 
     const utility = await UtilityMovement.create({
