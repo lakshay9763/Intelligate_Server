@@ -166,6 +166,8 @@ exports.GetVisitorPass = async (req, res, next) => {
       data: recentPasses 
     });
 
+    console.log(recentPasses,"Return")
+
   } catch (error) {
     console.log(error,error.message)
     return res.status(500).json({ success: false, message: 'Failed to fetch visitor passes' });
