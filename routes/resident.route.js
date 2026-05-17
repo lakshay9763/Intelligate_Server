@@ -72,7 +72,7 @@ residentRoute.post('/family', protect, authorize, async (req, res, next) => {
     const resident = new Resident({ name, phone, role, familyId, phase, block, plot, floor, password, relation });
     await resident.save();
 
-    res.status(200).json({ success: true, message: 'Family member added successfully!' });
+    res.status(200).json({ success: true,data:resident, message: 'Family member added successfully!' });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }
