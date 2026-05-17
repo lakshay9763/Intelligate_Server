@@ -4,7 +4,7 @@ const { Server } = require("socket.io");
 let io
 
 // mapping object
-const guardSockets = {}; 
+const gateSockets = {}; 
 // {
 //   Guard-01 : socketId123,
 //   Guard-02 : socketId456
@@ -24,24 +24,26 @@ const initSocket = (server)=>{
     console.log("User connected:",socket.id);
 
 
-    socket.on("registerGuard",(guardId)=>{
-        guardSockets[guardId] = socket.id
+    socket.on("registorGateDevice",(deviceId)=>{
 
-        console.log("Guard Registered:",guardId);
-        console.log(guardSockets)
+      console.log(deviceId,'q------------------------------')
+        gateSockets[deviceId] = socket.id
+
+        console.log("Guard Registered:",deviceId);
+        console.log(gateSockets)
     })
 
     
 
-    socket.on("dissconnect",()=>{
-        console.log("Disconnected:",socket.id);
-    })
+   socket.on("disconnect",()=>{
+   console.log("Disconnected:", socket.id);
+});
 
   })
 }
 
 
 const getIO = ()=> io;
-const getGuardSocketId = (guardId)=> guardSockets[guardId];
-
-module.exports = { initSocket, getIO, getGuardSocketId };
+const getGateDeviceSocketId = (deviceId)=> gateSockets[deviceId];
+const getGateDeviceAllSocketId = () => gateSockets
+module.exports = { initSocket, getIO, getGateDeviceSocketId,getGateDeviceAllSocketId };

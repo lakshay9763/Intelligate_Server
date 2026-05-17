@@ -1,1 +1,22 @@
+# Ignore sensitive logic and entry point
+# app.js
+
+# Ignore Environment and Credentials
+# face-worker/
+googleServices.json
+# firebase.js
+
+# Ignore massive dependency folders
 node_modules/
+
+# Ignore local storage/test data
+uploads/
+
+waste/
+
+faceWorker/
+process.env
+nodemon.json
+
+# Ignore system files
+# socket.js
