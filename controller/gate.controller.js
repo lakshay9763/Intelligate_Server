@@ -160,13 +160,15 @@ exports.GetVisitorPass = async (req, res, next) => {
       createdAt: { $gt: tenMinutesAgo }
     }).sort({ createdAt: -1 });
 
+      console.log(recentPasses,"Return")
+
     return res.status(200).json({ 
       success: true, 
       message: 'Visitor passes fetched.', 
       data: recentPasses 
     });
 
-    console.log(recentPasses,"Return")
+  
 
   } catch (error) {
     console.log(error,error.message)
