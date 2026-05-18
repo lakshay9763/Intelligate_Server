@@ -133,7 +133,7 @@ residentRoute.delete('/family', protect, authorize, async (req, res, next) => {
       })
 
       if(matchingFields.length > 0){
-        const dynamicDeletionObject = matchingFields(field => ({[field]:memberId}))
+        const dynamicDeletionObject = matchingFields.map(field => ({[field]:memberId}))
 
         const deletionPromise = Model.deleteMany({$or:dynamicDeletionObject}).then(result =>{
           if (result.deletedCount > 0) {
