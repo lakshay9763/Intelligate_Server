@@ -2,7 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const crypto = require('crypto');
 const cloudinary = require('cloudinary').v2;
-
+import bcrypt = require('bcrypt')
 const { Resident, VisitorPass, Notifications, ResidentQR } = require('../model/resident.model.js');
 const { Staff, StaffAffiliation, StaffMovement, PersonelStaffAttendance } = require('../model/staff.model.js'); // Ensure PersonelStaffAttendance is exported here
 const { VisitorRequest, VisitorMovement } = require('../model/gate.model.js');
@@ -69,7 +69,10 @@ residentRoute.post('/family', protect, authorize, async (req, res, next) => {
     const { name, phone, phase, block, plot, floor, password, relation, role } = req.body;
     const { familyId } = req.user;
 
-    const resident = new Resident({ name, phone, role, familyId, phase, block, plot, floor, password, relation });
+     const saltLevels = 10;
+     const hashedPassword = await bcrypt.hash(password, saltLevels);
+
+    const resident = new Resident({ name, phone, role, familyId, phase, block, plot, floor, password:hashedPassword, relation });
     await resident.save();
 
     res.status(200).json({ success: true,data:resident, message: 'Family member added successfully!' });
