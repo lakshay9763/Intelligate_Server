@@ -7,7 +7,7 @@ const { Resident, VisitorPass, Notifications, ResidentQR } = require('../model/r
 const { Staff, StaffAffiliation, StaffMovement, PersonelStaffAttendance } = require('../model/staff.model.js'); // Ensure PersonelStaffAttendance is exported here
 const { VisitorRequest, VisitorMovement } = require('../model/gate.model.js');
 const { UtilityWorker } = require('../model/utility.model.js');
-
+const mongoose = require('mongoose')
 const { protect } = require('../middleware/auth.js');
 const { authorize } = require('../middleware/roleCheck.js');
 const { getGateDeviceSocketId, getIO } = require('../socket.js');
@@ -89,6 +89,78 @@ residentRoute.get('/family', protect, authorize, async (req, res, next) => {
     res.status(200).json({ success: true, data: familyMembers, message: 'Family members found!' });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+residentRoute.delete('/family', protect, authorize, async (req, res, next) => {
+  try {
+    const { memberId } = req.body;
+    const { familyId } = req.user;
+
+    const memberToDelete = await Resident.findOne({
+      memberId,
+      familyId
+    });
+
+    if (!memberToDelete) {
+      return res.status(404).json({
+        success: false,
+        message: 'Member not found or does not belong to your unit.'
+      });
+    }
+
+    if (memberToDelete.role === 'owner') {
+      return res.status(403).json({
+        success: false,
+        message: 'Action Denied: Cannot delete the primary owner of the unit.'
+      });
+    }
+
+    const allModels = mongoose.models
+    const targetFields = ['memberId', 'approvedBy', 'createdBy', 'firedBy'];
+
+    const deletePromises = [];
+
+    for(const modelName in allModels){
+      const Model = allModels[modelName]
+      // find matching fields in each schema from target one
+      const matchingFields = []
+
+      Model.schema.eachPath((path)=>{
+        if(targetFields.includes(path)){
+          matchingFields.push(path)
+        }
+      })
+
+      if(matchingFields.length > 0){
+        const dynamicDeletionObject = matchingFields(field => ({[field]:memberId}))
+
+        const deletionPromise = Model.deleteMany({$or:dynamicDeletionObject}).then(result =>{
+          if (result.deletedCount > 0) {
+             console.log(`Deleted ${result.deletedCount} documents from ${modelName}`);
+           }
+        })
+
+        deletePromises.push(deletionPromise)
+      }
+
+
+    }
+
+    await Promise.all(deletePromises)
+
+  
+    res.status(200).json({
+      success: true,
+      message: 'Global sweep complete. Member deleted from all collections.',
+      memberId
+    });
+
+
+
+ } catch (error) {
+    console.error("Global Sweeper Error:", error);
+    res.status(500).json({ success: false, message: 'Failed to sweep database.' });
   }
 });
 
