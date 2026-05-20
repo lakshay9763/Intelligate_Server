@@ -191,9 +191,10 @@ residentRoute.post('/visitor-pass', protect, authorize, async (req, res, next) =
   }
 });
 
+
 residentRoute.post('/staff', protect, authorize, upload.single('image'), async (req, res, next) => {
   try {
-    const { name, phone, scopeOfWork, category } = req.body;
+    const { name, phone, scopeOfWork, category,otherType } = req.body;
     const { familyId } = req.user;
 
     if (!req.file) {
@@ -219,6 +220,7 @@ residentRoute.post('/staff', protect, authorize, upload.single('image'), async (
       phone,
       scopeOfWork: parsedScope,
       category,
+      otherType,
       registeredBy: 'RESIDENT',
       photo: imageUri,
       activeHousesCount: 1
@@ -252,6 +254,7 @@ residentRoute.post('/staff', protect, authorize, upload.single('image'), async (
     res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
+
 
 residentRoute.get('/staff', protect, authorize, async (req, res, next) => {
   try {
