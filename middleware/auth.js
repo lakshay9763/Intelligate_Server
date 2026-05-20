@@ -133,7 +133,7 @@ const protectResident = async (req, res, next) => {
 const protectAdmin = async (req,res,next)=>{
   try {
     const token = req.cookies.admin_session
-    console.log(token,'chekc')
+   
     if(!token){
       return res.status(401).json({message:'Unauthrized! please login'})
     }
