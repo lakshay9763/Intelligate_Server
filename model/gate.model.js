@@ -207,4 +207,4 @@ const DelievryMovement = mongoose.model("DelievryMovement",deliveryMovementSchem
 const UtilityMovement = mongoose.model("UtilityMovement",utilityMovementSchema)
 const VisitorMovement = mongoose.model("VisitorMovement",visitorMovementSchema)
 
-module.exports = {GateDevices,ActivateDevice,VisitorRequest,DelievryMovement,UtilityMovement,VisitorMovement}
+module.exports = {GateDevices,ActivateDevice,VisitorRequest,DelievryMovement,UtilityMovement,VisitorMovement,BiometricData}
