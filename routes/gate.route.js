@@ -593,4 +593,141 @@ gateRoute.get('/todays-log', protectGate, authorize, async (req, res, next) => {
   }
 });
 
+
+
+gateRoute.post('/face/register', upload.single('image'), async (req, res) => {
+  try {
+    const { id, name, actorType, role } = req.body;
+
+
+    if (!req.body.embedding) {
+      return res.status(400).json({ success: false, message: "Missing embedding vector array." });
+    }
+
+    // convert json array to real array 
+    const vectorArray = JSON.parse(req.body.embedding);
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({ success: false, message: "Missing cropped face image file." });
+    }
+
+    
+    const vectorizeId = `${actorType.toLowerCase()}_${id}`;
+
+    const imageUri = await uploadImage(req.file)
+
+    const payloadForCloudflare = {
+      id: vectorizeId,
+      vector: vectorArray,
+      metadata: {
+        name: name,
+        type: actorType.toLowerCase(), // resident, staff, utility
+        role: role,                   // Maid, Plumber, Tenant, etc.
+        photo: imageUri,
+      }
+    };
+
+    const cloudflareResponse = await fetch('https://faceworker.lakshay9763.workers.dev/insert', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payloadForCloudflare)
+    });
+
+    const cloudflareData = await cloudflareResponse.json();
+
+    if (cloudflareData.success) {
+
+      const dualSave = await BiometricData.findOneAndUpdate({ vectorizeId:vectorizeId},{
+        name,
+        type:actorType.toLowerCase(),
+        role:role,
+        photo:imageUri
+      },
+        {
+          upsert:true, // if exists update it , if not  create it
+          new:true
+        }
+      )
+
+
+      
+
+      return res.status(200).json({
+        success: true,
+        message: "Successfully synchronized biometrics to cloud intelligence layer.",
+        data:dualSave
+      });
+    } else {
+      throw new Error(cloudflareData.error || "Cloudflare engine rejected the record entry.");
+    }
+
+  } catch (error) {
+    console.error("[IntelliGate Error] Registration failed:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error running biometric registration pipeline.",
+      error: error.message
+    });
+  }
+});
+
+gateRoute.post('/face/search', async (req, res) => {
+    try {
+        const { embedding } = req.body;
+        
+        if (!embedding) {
+            return res.status(400).json({ success: false, message: "No embedding provided" });
+        }
+
+        const vectorArray = typeof embedding === 'string' ? JSON.parse(embedding) : embedding;
+
+        const cloudflareResponse = await fetch('https://faceworker.lakshay9763.workers.dev/search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ vector: vectorArray })
+        });
+
+        const cloudflareData = await cloudflareResponse.json();
+
+
+        console.log(cloudflareData,'not')
+
+        // 2. Check if we found a match and if the confidence is high enough
+        if (cloudflareData.matches && cloudflareData.matches.length > 0) {
+            const bestMatch = cloudflareData.matches[0];
+            
+            if (bestMatch.score >= 0.50) {
+                
+                // 3. Match found! Get the clean profile from MongoDB
+                const profile = await BiometricData.findOne({ vectorizeId: bestMatch.id });
+
+                if (profile) {
+                    return res.status(200).json({ 
+                        success: true, 
+                        isMatch: true, 
+                        score: bestMatch.score,
+                        profile: profile 
+                    });
+                }
+            }
+        }
+
+        // 4. If no match passed the threshold
+        return res.status(200).json({ 
+            success: true, 
+            isMatch: false, 
+            message: "Unrecognized Person" 
+        });
+
+    } catch (error) {
+        console.error("Search Error:", error);
+        res.status(500).json({ success: false, message: "Server search failed." });
+    }
+});
+
+
 module.exports = gateRoute;
