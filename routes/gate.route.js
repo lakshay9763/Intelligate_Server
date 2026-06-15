@@ -3,7 +3,7 @@ const multer = require('multer');
 
 const { Resident, VisitorPass, Notifications } = require('../model/resident.model.js');
 const admin = require('../firebase.js');
-const { DelievryMovement, UtilityMovement, VisitorMovement } = require('../model/gate.model.js');
+const { DelievryMovement, UtilityMovement, VisitorMovement ,BiometricData} = require('../model/gate.model.js');
 const { Staff, StaffMovement } = require('../model/staff.model.js');
 const { UtilityWorker } = require('../model/utility.model.js');
 
