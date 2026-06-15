@@ -190,9 +190,16 @@ const visitorMovementSchema = new mongoose.Schema({
 // Optimize for your "Active Staff/Visitors" dashboard cards
 visitorMovementSchema.index({ status: 1, entryTime: -1 });
 
-module.exports = mongoose.model('UtilityMovement', utilityMovementSchema);
+const biometricSchema = mongoose.Schema({
+  vectorizeId:{type:String,required:true,unique:true},
+  name:{type:String,required:true},
+  type:{type:String,enum:['resident','staff','utility'],required:true},
+  role:{type:String,required:true}, // maid plumber cook etc
+  photo:{type:String,default:null},
+})
 
 
+const BiometricData = mongoose.model("BiometricData",biometricSchema)
 const VisitorRequest = mongoose.model('VisitorRequest', visitorRequestSchema);
 const GateDevices = mongoose.model("GateDevices",gateDeviceSchema)
 const ActivateDevice = mongoose.model("ActivateGateDevices",deviceActivationSchema)
